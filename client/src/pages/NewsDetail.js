@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import { format } from 'date-fns';
 import { FaCalendarAlt, FaUser, FaArrowLeft, FaShareAlt, FaEye, FaFire, FaStar, FaYoutube, FaFacebook } from 'react-icons/fa';
 import Header from '../components/Header';
@@ -37,7 +38,7 @@ const NewsDetail = () => {
 
   const fetchArticle = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/news/${id}`);
+      const response = await axios.get(API_ENDPOINTS.NEWS_BY_ID(id));
       setArticle(response.data);
       setLoading(false);
     } catch (error) {
@@ -49,7 +50,7 @@ const NewsDetail = () => {
 
   const fetchRelatedNews = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/news/${id}/related`);
+      const response = await axios.get(API_ENDPOINTS.NEWS_RELATED(id));
       setRelatedNews(response.data);
     } catch (error) {
       console.error('Error fetching related news:', error);

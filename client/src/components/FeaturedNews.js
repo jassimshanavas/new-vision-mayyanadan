@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import { FaStar, FaArrowRight } from 'react-icons/fa';
 import { format } from 'date-fns';
 import { getBestThumbnailUrl } from '../utils/imageExtractor';
@@ -15,7 +16,7 @@ const FeaturedNews = () => {
 
   const fetchFeatured = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/news/featured');
+      const response = await axios.get(API_ENDPOINTS.NEWS_FEATURED);
       setFeatured(response.data.slice(0, 6));
       setLoading(false);
     } catch (error) {

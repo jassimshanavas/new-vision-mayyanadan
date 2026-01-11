@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import NewsSection from '../components/NewsSection';
@@ -20,8 +21,8 @@ const Home = () => {
   const fetchData = async () => {
     try {
       const [newsRes, videosRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/news'),
-        axios.get('http://localhost:5000/api/videos')
+        axios.get(API_ENDPOINTS.NEWS),
+        axios.get(API_ENDPOINTS.VIDEOS)
       ]);
       setNews(newsRes.data.filter(article => article.published));
       setVideos(videosRes.data);

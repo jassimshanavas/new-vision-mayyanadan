@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import { FaFire, FaTimes } from 'react-icons/fa';
 
 const FlashNews = () => {
@@ -13,7 +14,7 @@ const FlashNews = () => {
 
   const fetchFlashNews = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/news/flash');
+      const response = await axios.get(API_ENDPOINTS.NEWS_FLASH);
       if (response.data) {
         setFlashNews(response.data);
         // Check if user has dismissed this flash news

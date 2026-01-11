@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import { 
   FaNewspaper, 
   FaVideo, 
@@ -71,10 +72,10 @@ const AdminDashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       };
       const [newsRes, videosRes, postsRes, settingsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/news'),
-        axios.get('http://localhost:5000/api/videos'),
-        axios.get('http://localhost:5000/api/facebook-posts').catch(() => ({ data: [] })),
-        axios.get('http://localhost:5000/api/settings')
+        axios.get(API_ENDPOINTS.NEWS),
+        axios.get(API_ENDPOINTS.VIDEOS),
+        axios.get(API_ENDPOINTS.FACEBOOK_POSTS).catch(() => ({ data: [] })),
+        axios.get(API_ENDPOINTS.SETTINGS)
       ]);
       setNews(newsRes.data);
       setVideos(videosRes.data);
@@ -143,23 +144,23 @@ const AdminDashboard = () => {
 
       if (modalType === 'news') {
         if (editingItem) {
-          await axios.put(`http://localhost:5000/api/news/${editingItem.id}`, formData, config);
+          await axios.put(API_ENDPOINTS.NEWS_BY_ID(editingItem.id), formData, config);
         } else {
-          await axios.post('http://localhost:5000/api/news', formData, config);
+          await axios.post(API_ENDPOINTS.NEWS, formData, config);
         }
       } else if (modalType === 'video') {
         if (editingItem) {
           // Videos update logic if needed
           alert('Video editing coming soon');
         } else {
-          await axios.post('http://localhost:5000/api/videos', formData, config);
+          await axios.post(API_ENDPOINTS.VIDEOS, formData, config);
         }
       } else if (modalType === 'facebook-post') {
         if (editingItem) {
           // Facebook posts update logic if needed
           alert('Facebook post editing coming soon');
         } else {
-          await axios.post('http://localhost:5000/api/facebook-posts', formData, config);
+          await axios.post(API_ENDPOINTS.FACEBOOK_POSTS, formData, config);
         }
       }
 
@@ -179,13 +180,13 @@ const AdminDashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       };
       if (type === 'news') {
-        await axios.delete(`http://localhost:5000/api/news/${id}`, config);
+        await axios.delete(API_ENDPOINTS.NEWS_BY_ID(id), config);
         setNews(news.filter(n => n.id !== id));
       } else if (type === 'video') {
-        await axios.delete(`http://localhost:5000/api/videos/${id}`, config);
+        await axios.delete(API_ENDPOINTS.VIDEOS_BY_ID(id), config);
         setVideos(videos.filter(v => v.id !== id));
       } else if (type === 'facebook-post') {
-        await axios.delete(`http://localhost:5000/api/facebook-posts/${id}`, config);
+        await axios.delete(API_ENDPOINTS.FACEBOOK_POSTS_BY_ID(id), config);
         setFacebookPosts(facebookPosts.filter(p => p.id !== id));
       }
     } catch (error) {
@@ -205,7 +206,7 @@ const AdminDashboard = () => {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      const response = await axios.post('http://localhost:5000/api/videos/extract-details', {
+      const response = await axios.post(API_ENDPOINTS.VIDEOS_EXTRACT_DETAILS, {
         url: formData.url
       }, config);
 
@@ -246,7 +247,7 @@ const AdminDashboard = () => {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      const response = await axios.post('http://localhost:5000/api/news/extract-image', {
+      const response = await axios.post(API_ENDPOINTS.NEWS_EXTRACT_IMAGE, {
         url: formData.imageUrl
       }, config);
 

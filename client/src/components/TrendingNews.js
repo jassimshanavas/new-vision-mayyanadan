@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import { FaFire, FaEye } from 'react-icons/fa';
 import { format } from 'date-fns';
 import { getBestThumbnailUrl } from '../utils/imageExtractor';
@@ -15,7 +16,7 @@ const TrendingNews = () => {
 
   const fetchTrending = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/news/trending');
+      const response = await axios.get(API_ENDPOINTS.NEWS_TRENDING);
       setTrending(response.data);
       setLoading(false);
     } catch (error) {

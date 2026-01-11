@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import { FaNewspaper } from 'react-icons/fa';
 
 const NewsTicker = () => {
@@ -12,7 +13,7 @@ const NewsTicker = () => {
 
   const fetchHeadlines = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/news');
+      const response = await axios.get(API_ENDPOINTS.NEWS);
       // Get latest 10 articles (excluding flash news which is shown separately)
       const latest = response.data.filter(article => !article.flashNews).slice(0, 10);
       setHeadlines(latest);
