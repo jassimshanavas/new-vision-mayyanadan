@@ -12,10 +12,17 @@ export default function handler(req, res) {
         return res.status(404).json({ error: 'Article not found' });
       }
       
-      // Increment views on read
+      // Increment views on read (skip write on Vercel's read-only filesystem)
       if (article.published) {
         article.views = (article.views || 0) + 1;
-        writeData(newsFile, news);
+        // Try to write, but don't fail if filesystem is read-only (Vercel)
+        try {
+          writeData(newsFile, news);
+        } catch (writeError) {
+          // Silently fail - views increment is nice-to-have but not critical
+          // On Vercel, filesystem is read-only, so we skip the write
+          console.log('Could not write views increment (filesystem may be read-only)');
+        }
       }
       
       res.json(article);
