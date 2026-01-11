@@ -1,249 +1,128 @@
-# New Vision Mayyanadan - News Website
+# New Vision Mayyanadan - News Website (Next.js)
 
-A modern, stylish news reporting website with YouTube and Facebook integration, featuring a comprehensive admin dashboard for content management.
+A modern, unified news reporting website built with Next.js. Everything (frontend + backend) in one codebase, deployed easily to Vercel.
 
-## Features
+## 🚀 Quick Start
 
-- 🎨 **Modern & Responsive Design**: Beautiful, mobile-friendly interface built with React and Tailwind CSS
-- 📰 **News Management**: Full CRUD operations for news articles with categories and image support
-- 🎥 **YouTube Integration**: Display and manage videos from your YouTube channel
-- 📱 **Facebook Integration**: Embed and showcase your Facebook page updates
-- 🔐 **Admin Dashboard**: Secure authentication system for content management
-- 🎯 **Real-time Updates**: Easy daily content updates through admin panel
-
-## Tech Stack
-
-- **Frontend**: React 18, React Router, Tailwind CSS, React Icons
-- **Backend**: Node.js, Express.js
-- **Authentication**: JWT (JSON Web Tokens)
-- **Data Storage**: JSON files (easily upgradable to database)
-
-## Installation & Setup
-
-### Prerequisites
-
-- Node.js (v14 or higher)
-- npm or yarn
-
-### Step 1: Install Dependencies
+### Installation
 
 ```bash
-# Install root dependencies
 npm install
-
-# Install server dependencies
-cd server
-npm install
-
-# Install client dependencies
-cd ../client
-npm install
-
-# Or use the convenience script
-npm run install-all
 ```
 
-### Step 2: Environment Setup
-
-Create a `.env` file in the `server` directory:
-
-```env
-PORT=5000
-JWT_SECRET=your-secret-key-change-in-production
-NODE_ENV=development
-```
-
-### Step 3: Run the Application
-
-**Development Mode (Recommended):**
+### Development
 
 ```bash
-# From root directory - runs both server and client
 npm run dev
-
-# Or run separately:
-# Terminal 1 - Start server
-cd server
-npm run dev
-
-# Terminal 2 - Start client
-cd client
-npm start
 ```
 
-**Production Mode:**
+Visit http://localhost:3000
+
+### Build for Production
 
 ```bash
-# Build client
-cd client
 npm run build
-
-# Start server
-cd ../server
 npm start
 ```
 
-The application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
+## 📦 Deployment to Vercel
 
-## Default Admin Credentials
+1. Push your code to GitHub
+2. Import the project in Vercel
+3. Vercel auto-detects Next.js
+4. Deploy!
+
+**That's it!** No separate backend deployment needed - everything runs on Vercel.
+
+## 🔐 Default Admin Credentials
 
 - **Username**: `admin`
 - **Password**: `admin123`
 
-⚠️ **Important**: Change the default password immediately after first login in production!
+⚠️ **Important**: Change the default password immediately after first login!
 
-## Usage Guide
-
-### Admin Dashboard
-
-1. Navigate to `/admin/login`
-2. Login with admin credentials
-3. Manage content:
-   - **News Tab**: Add, edit, delete news articles
-   - **Videos Tab**: Add YouTube videos by URL
-   - **Settings Tab**: View site settings
-
-### Adding News Articles
-
-1. Click "Add News" in the News tab
-2. Fill in the form:
-   - Title (required)
-   - Content (required)
-   - Excerpt (optional, auto-generated if empty)
-   - Image URL (optional)
-   - Category (General, Local, Sports, Politics, Entertainment, Technology)
-   - Published status (checkbox)
-3. Click "Save"
-
-### Adding Videos
-
-1. Click "Add Video" in the Videos tab
-2. Enter YouTube video URL (e.g., `https://www.youtube.com/watch?v=...`)
-3. Add title and description
-4. Mark as "Featured" if needed
-5. Click "Save"
-
-### Facebook Integration
-
-The Facebook page is automatically embedded using Facebook's Page Plugin. Update the page ID in the code if needed:
-- Current Page ID: `61577465543293`
-- Page URL: `https://www.facebook.com/profile.php?id=61577465543293`
-
-### YouTube Integration
-
-- Channel: `@newvisionmayyanadan`
-- Channel URL: `https://www.youtube.com/@newvisionmayyanadan`
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 new-vision-new/
-├── client/                 # React frontend
-│   ├── public/
-│   ├── src/
-│   │   ├── components/    # Reusable components
-│   │   ├── pages/         # Page components
-│   │   ├── context/       # React context (Auth)
-│   │   └── App.js         # Main app component
-│   └── package.json
-├── server/                 # Node.js backend
-│   ├── data/              # JSON data files (auto-created)
-│   ├── index.js           # Express server
-│   └── package.json
-├── package.json           # Root package.json
-└── README.md
+├── pages/
+│   ├── api/          # API routes (backend)
+│   ├── admin/        # Admin pages
+│   ├── news/         # News pages  
+│   └── index.js      # Home page
+├── components/       # React components
+├── lib/             # Utilities and helpers
+├── data/            # JSON data files
+└── styles/          # Global styles
 ```
 
-## API Endpoints
+## 🛠️ Tech Stack
 
-### Authentication
-- `POST /api/auth/login` - Admin login
+- **Framework**: Next.js 14
+- **Styling**: Tailwind CSS
+- **Authentication**: JWT
+- **Data Storage**: JSON files (easily upgradable to database)
 
-### News
-- `GET /api/news` - Get all news articles
-- `GET /api/news/:id` - Get single article
-- `POST /api/news` - Create article (requires auth)
-- `PUT /api/news/:id` - Update article (requires auth)
-- `DELETE /api/news/:id` - Delete article (requires auth)
+## ✨ Features
 
-### Videos
-- `GET /api/videos` - Get all videos
-- `POST /api/videos` - Add video (requires auth)
-- `DELETE /api/videos/:id` - Delete video (requires auth)
+- 🎨 Modern & Responsive Design
+- 📰 News Management with full CRUD
+- 🎥 YouTube Integration
+- 📱 Facebook Integration
+- 🔐 Secure Admin Dashboard
+- ⚡ Fast Performance (Next.js SSR/SSG)
+- 🚀 Easy Deployment (Vercel)
 
-### Settings
-- `GET /api/settings` - Get site settings
-- `PUT /api/settings` - Update settings (requires auth)
+## 📝 Environment Variables
 
-## Customization
+Create a `.env.local` file (optional for development):
 
-### Changing Colors
-
-Edit `client/tailwind.config.js` to customize the color scheme:
-
-```javascript
-theme: {
-  extend: {
-    colors: {
-      primary: {
-        // Your color values
-      }
-    }
-  }
-}
+```env
+JWT_SECRET=your-secret-key-change-in-production
 ```
 
-### Adding More Categories
+For production on Vercel, add this in the Vercel dashboard under Settings → Environment Variables.
 
-Edit the category select in `client/src/pages/AdminDashboard.js`:
+## 📚 API Endpoints
 
-```javascript
-<option>Your Category</option>
-```
+All API routes are in `pages/api/`:
 
-## Future Enhancements
+- `/api/auth/login` - Admin login
+- `/api/news` - News CRUD operations
+- `/api/videos` - Video management
+- `/api/facebook-posts` - Facebook posts
+- `/api/settings` - Site settings
 
-- Database integration (MongoDB/PostgreSQL)
-- Image upload functionality
-- Advanced search and filtering
-- Comments system
-- Newsletter subscription
-- SEO optimization
-- Analytics integration
+## 🔄 Migration from Separate Frontend/Backend
 
-## Troubleshooting
+This is the unified Next.js version. If you had a separate React + Express setup:
+- API routes moved from `server/index.js` to `pages/api/`
+- React components work the same (with Next.js Link)
+- Single deployment instead of two separate ones
+- No CORS issues (same origin)
+
+## 📖 Documentation
+
+- See `README_NEXTJS.md` for migration details
+- See `MIGRATION_NOTES.md` for component update notes
+
+## 🐛 Troubleshooting
 
 ### Port Already in Use
+Change the port: `PORT=3001 npm run dev`
 
-If port 5000 or 3000 is already in use:
+### Build Errors
+Make sure all dependencies are installed: `npm install`
 
-1. Change server port in `server/index.js`
-2. Update `client/package.json` proxy setting
-3. Update API calls in client components
-
-### CORS Errors
-
-Ensure CORS is enabled in `server/index.js`. Already configured by default.
-
-### Facebook Embed Not Showing
-
-- Check if Facebook page is public
-- Verify page ID is correct
-- Ensure internet connection for Facebook SDK
-
-## License
+## 📄 License
 
 MIT License - feel free to use and modify as needed.
 
-## Support
+## 🤝 Support
 
-For issues or questions, please check:
-- Facebook Page: https://www.facebook.com/profile.php?id=61577465543293
-- YouTube Channel: https://www.youtube.com/@newvisionmayyanadan
+- Facebook: https://www.facebook.com/profile.php?id=61577465543293
+- YouTube: https://www.youtube.com/@newvisionmayyanadan
 
 ---
 
 Built with ❤️ for New Vision Mayyanadan
-
