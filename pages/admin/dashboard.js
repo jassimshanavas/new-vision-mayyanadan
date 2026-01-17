@@ -156,39 +156,61 @@ const SortableNewsItem = ({ article, onEdit, onDelete }) => {
 };
 
 // Sortable News Card Component (Mobile/Tablet)
-const SortableNewsCard = ({ article, onEdit, onDelete }) => {
+const SortableNewsCard = ({ article, onEdit, onDelete, isReorderMode }) => {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id: article.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    // Add visual feedback when dragging
+    opacity: isDragging ? 0.5 : 1,
+    scale: isDragging ? 1.05 : 1,
   };
 
+  // Only apply drag listeners when in reorder mode
+  const dragProps = isReorderMode ? { ...attributes, ...listeners } : {};
+  const cursorClass = isReorderMode ? 'cursor-grab active:cursor-grabbing' : '';
+  const dragClass = isDragging ? 'shadow-2xl ring-2 ring-purple-500' : '';
+
   return (
-    <div ref={setNodeRef} style={style} className="card p-4 space-y-3">
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...dragProps}
+      className={`card p-4 space-y-3 ${cursorClass} ${dragClass}`}
+    >
       <div className="flex justify-between items-start">
-        <div className="flex items-start space-x-2 flex-1">
-          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 mt-1">
-            <FaGripVertical />
-          </div>
+        <div className={`flex items-start space-x-2 flex-1 ${isReorderMode ? 'pointer-events-none' : ''}`}>
+          {isReorderMode && (
+            <div className="text-purple-500 mt-1">
+              <FaGripVertical />
+            </div>
+          )}
           <h3 className="font-bold text-gray-800 flex-1 pr-2 line-clamp-2">{article.title}</h3>
         </div>
-        <div className="flex space-x-2 flex-shrink-0">
+        <div className="flex space-x-2 flex-shrink-0 pointer-events-auto">
           <button
-            onClick={() => onEdit(article)}
+            onClick={(e) => {
+              if (isReorderMode) e.stopPropagation();
+              onEdit(article);
+            }}
             className="text-blue-600 hover:text-blue-700 p-1"
             title="Edit"
           >
             <FaEdit />
           </button>
           <button
-            onClick={() => onDelete(article.id)}
+            onClick={(e) => {
+              if (isReorderMode) e.stopPropagation();
+              onDelete(article.id);
+            }}
             className="text-red-600 hover:text-red-700 p-1"
             title="Delete"
           >
@@ -196,7 +218,7 @@ const SortableNewsCard = ({ article, onEdit, onDelete }) => {
           </button>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className={`flex flex-wrap gap-2 items-center ${isReorderMode ? 'pointer-events-none' : ''}`}>
         <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
           {article.category}
         </span>
@@ -224,19 +246,20 @@ const SortableNewsCard = ({ article, onEdit, onDelete }) => {
           {article.published ? 'Published' : 'Draft'}
         </span>
       </div>
-      <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+      <div className={`flex flex-wrap gap-3 text-sm text-gray-600 ${isReorderMode ? 'pointer-events-none' : ''}`}>
         <span>{article.author}</span>
         <span>•</span>
         <span>{new Date(article.createdAt).toLocaleDateString()}</span>
       </div>
       {(article.youtubeUrl || article.facebookUrl) && (
-        <div className="flex space-x-3 pt-2 border-t">
+        <div className="flex space-x-3 pt-2 border-t pointer-events-auto">
           {article.youtubeUrl && (
             <a
               href={article.youtubeUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center space-x-1 text-red-600 hover:text-red-700 text-sm"
+              onClick={(e) => { if (isReorderMode) e.stopPropagation(); }}
             >
               <FaYoutube />
               <span>YouTube</span>
@@ -248,6 +271,7 @@ const SortableNewsCard = ({ article, onEdit, onDelete }) => {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm"
+              onClick={(e) => { if (isReorderMode) e.stopPropagation(); }}
             >
               <FaFacebook />
               <span>Facebook</span>
@@ -812,7 +836,10 @@ const AdminDashboard = () => {
               {isReorderMode && (
                 <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                   <p className="text-sm text-purple-800">
-                    <strong>Reorder Mode:</strong> Drag articles using the <FaGripVertical className="inline" /> handle to reorder them. Click "Save Order" when done.
+                    <strong>Reorder Mode:</strong>
+                    <span className="hidden lg:inline"> Drag articles using the <FaGripVertical className="inline" /> handle to reorder them.</span>
+                    <span className="lg:hidden"> Tap and drag any article card to reorder.</span>
+                    {' '}Click "Save Order" when done.
                   </p>
                 </div>
               )}
@@ -966,6 +993,7 @@ const AdminDashboard = () => {
                           article={article}
                           onEdit={() => openModal('news', article)}
                           onDelete={(id) => handleDelete('news', id)}
+                          isReorderMode={true}
                         />
                       ))}
                     </SortableContext>
