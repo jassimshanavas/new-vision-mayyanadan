@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@newvision.com",
+    "password": "$2a$10$t8EPQxhg/CvdOCx8TCJ.x.7UT/6VqgwLLZcb6fq0GQHbHD/a/JQWO",
+    "role": "admin",
+    "createdAt": "2026-01-10T17:23:16.122Z"
+  }
+]
