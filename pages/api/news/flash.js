@@ -1,17 +1,19 @@
-import { readData, newsFile } from '../../../lib/data';
+import { supabaseHelpers, isSupabaseConfigured } from '../../../lib/supabase';
 
-export default function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+export default async function handler(req, res) {
+  if (!isSupabaseConfigured()) {
+    return res.status(500).json({ error: 'Database not configured' });
   }
 
-  try {
-    const news = readData(newsFile);
-    const flashNews = news.find(n => n.flashNews && n.published);
-    res.json(flashNews || null);
-  } catch (error) {
-    console.error('Error fetching flash news:', error);
-    res.status(500).json({ error: 'Failed to fetch flash news' });
+  if (req.method === 'GET') {
+    try {
+      const news = await supabaseHelpers.getNews({ published: true, flashNews: true });
+      res.json(news.slice(0, 5)); // Return top 5 flash news
+    } catch (error) {
+      console.error('Error fetching flash news:', error);
+      res.status(500).json({ error: 'Failed to fetch flash news' });
+    }
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
   }
 }
-

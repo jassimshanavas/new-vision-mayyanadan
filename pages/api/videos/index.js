@@ -1,11 +1,19 @@
-import { readData, writeData, videosFile, extractYouTubeId } from '../../../lib/data';
+import { extractYouTubeId } from '../../../lib/data';
 import { authenticateToken } from '../../../lib/auth';
+import { supabaseHelpers, isSupabaseConfigured } from '../../../lib/supabase';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
+  // Check if Supabase is configured
+  if (!isSupabaseConfigured()) {
+    return res.status(500).json({
+      error: 'Database not configured. Please set up Supabase credentials.'
+    });
+  }
+
   if (req.method === 'GET') {
     try {
-      const videos = readData(videosFile);
-      res.json(videos.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt)));
+      const videos = await supabaseHelpers.getVideos();
+      res.json(videos);
     } catch (error) {
       console.error('Error fetching videos:', error);
       res.status(500).json({ error: 'Failed to fetch videos' });
@@ -17,26 +25,22 @@ export default function handler(req, res) {
     }
 
     try {
-      const videos = readData(videosFile);
       const videoId = extractYouTubeId(req.body.url);
       if (!videoId) {
         return res.status(400).json({ error: 'Invalid YouTube URL' });
       }
 
       const newVideo = {
-        id: videos.length > 0 ? Math.max(...videos.map(v => v.id)) + 1 : 1,
-        videoId: videoId,
+        video_id: videoId,
         url: req.body.url,
         title: req.body.title || 'Untitled Video',
         description: req.body.description || '',
-        thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-        addedAt: new Date().toISOString(),
+        thumbnail_url: req.body.thumbnailUrl || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
         featured: req.body.featured || false
       };
 
-      videos.push(newVideo);
-      writeData(videosFile, videos);
-      res.status(201).json(newVideo);
+      const createdVideo = await supabaseHelpers.createVideo(newVideo);
+      res.status(201).json(createdVideo);
     } catch (error) {
       console.error('Error adding video:', error);
       res.status(500).json({ error: 'Failed to add video' });

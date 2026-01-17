@@ -4,15 +4,15 @@ import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../../lib/config';
-import { 
-  FaNewspaper, 
-  FaVideo, 
+import {
+  FaNewspaper,
+  FaVideo,
   FaFacebook,
   FaYoutube,
-  FaCog, 
-  FaSignOutAlt, 
-  FaPlus, 
-  FaEdit, 
+  FaCog,
+  FaSignOutAlt,
+  FaPlus,
+  FaEdit,
   FaTrash,
   FaHome,
   FaTimes,
@@ -202,11 +202,21 @@ const AdminDashboard = () => {
       return;
     }
 
+    // Check if token exists
+    if (!token) {
+      alert('Authentication token not found. Please log in again.');
+      console.error('No token available');
+      return;
+    }
+
     setExtractingVideo(true);
     try {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
+
+      console.log('Sending request to extract video details with token:', token ? 'Token present' : 'No token');
+
       const response = await axios.post(API_ENDPOINTS.VIDEOS_EXTRACT_DETAILS, {
         url: formData.url
       }, config);
@@ -216,11 +226,18 @@ const AdminDashboard = () => {
         title: response.data.title || formData.title,
         description: response.data.description || formData.description
       });
-      
+
       alert('Video details extracted successfully!');
     } catch (error) {
       console.error('Error extracting video details:', error);
-      alert(error.response?.data?.error || 'Failed to extract video details. Please try again.');
+      console.error('Token used:', token ? 'Token present' : 'No token');
+      console.error('Response:', error.response);
+
+      if (error.response?.status === 401) {
+        alert('Authentication failed. Please log out and log in again.');
+      } else {
+        alert(error.response?.data?.error || 'Failed to extract video details. Please try again.');
+      }
     } finally {
       setExtractingVideo(false);
     }
@@ -232,9 +249,16 @@ const AdminDashboard = () => {
       return;
     }
 
+    // Check if token exists
+    if (!token) {
+      alert('Authentication token not found. Please log in again.');
+      console.error('No token available');
+      return;
+    }
+
     // Check if it's already a direct image URL (ends with image extensions)
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-    const isDirectImageUrl = imageExtensions.some(ext => 
+    const isDirectImageUrl = imageExtensions.some(ext =>
       formData.imageUrl.toLowerCase().includes(ext)
     );
 
@@ -256,12 +280,18 @@ const AdminDashboard = () => {
         ...formData,
         imageUrl: response.data.thumbnailUrl
       });
-      
+
       alert(`Image URL extracted successfully from ${response.data.sourceType}!`);
     } catch (error) {
       console.error('Error extracting image URL:', error);
+
+      if (error.response?.status === 401) {
+        alert('Authentication failed. Please log out and log in again.');
+        return;
+      }
+
       const errorMessage = error.response?.data?.error || 'Failed to extract image URL. Please try again or use a direct image URL.';
-      
+
       // Provide helpful suggestions for Facebook URLs
       if (formData.imageUrl && (formData.imageUrl.includes('facebook.com') || formData.imageUrl.includes('fb.com'))) {
         alert(
@@ -313,7 +343,7 @@ const AdminDashboard = () => {
   const handleImageUpload = async (file) => {
     setUploadingImage(true);
     setUploadProgress(0);
-    
+
     try {
       const downloadURL = await uploadImageToSupabase(
         file,
@@ -403,21 +433,19 @@ const AdminDashboard = () => {
           <div className="flex flex-col sm:flex-row border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/30">
             <button
               onClick={() => setActiveTab('news')}
-              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-all duration-300 relative group text-sm sm:text-base ${
-                activeTab === 'news'
+              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-all duration-300 relative group text-sm sm:text-base ${activeTab === 'news'
                   ? 'text-blue-600 bg-white shadow-lg'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-center space-x-1 sm:space-x-2">
                 <FaNewspaper className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${activeTab === 'news' ? 'scale-110' : ''}`} />
                 <span className="hidden sm:inline">News Articles</span>
                 <span className="sm:hidden">News</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-bold transition-all ${
-                  activeTab === 'news' 
-                    ? 'bg-blue-100 text-blue-700' 
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold transition-all ${activeTab === 'news'
+                    ? 'bg-blue-100 text-blue-700'
                     : 'bg-gray-200 text-gray-600'
-                }`}>
+                  }`}>
                   {news.length}
                 </span>
               </div>
@@ -427,20 +455,18 @@ const AdminDashboard = () => {
             </button>
             <button
               onClick={() => setActiveTab('videos')}
-              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-all duration-300 relative group text-sm sm:text-base ${
-                activeTab === 'videos'
+              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-all duration-300 relative group text-sm sm:text-base ${activeTab === 'videos'
                   ? 'text-blue-600 bg-white shadow-lg'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-center space-x-1 sm:space-x-2">
                 <FaVideo className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${activeTab === 'videos' ? 'scale-110' : ''}`} />
                 <span>Videos</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-bold transition-all ${
-                  activeTab === 'videos' 
-                    ? 'bg-blue-100 text-blue-700' 
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold transition-all ${activeTab === 'videos'
+                    ? 'bg-blue-100 text-blue-700'
                     : 'bg-gray-200 text-gray-600'
-                }`}>
+                  }`}>
                   {videos.length}
                 </span>
               </div>
@@ -450,11 +476,10 @@ const AdminDashboard = () => {
             </button>
             <button
               onClick={() => setActiveTab('settings')}
-              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-all duration-300 relative group text-sm sm:text-base ${
-                activeTab === 'settings'
+              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-all duration-300 relative group text-sm sm:text-base ${activeTab === 'settings'
                   ? 'text-blue-600 bg-white shadow-lg'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-center space-x-1 sm:space-x-2">
                 <FaCog className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${activeTab === 'settings' ? 'scale-110 rotate-90' : ''}`} />
@@ -486,15 +511,15 @@ const AdminDashboard = () => {
               <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Title</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Category</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Author</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Flags</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Date</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
-                      </tr>
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Title</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Category</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Author</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Flags</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Date</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
+                    </tr>
                   </thead>
                   <tbody>
                     {news.map((article) => (
@@ -530,11 +555,10 @@ const AdminDashboard = () => {
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className={`text-xs font-semibold px-2 py-1 rounded ${
-                              article.published
+                            className={`text-xs font-semibold px-2 py-1 rounded ${article.published
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-gray-100 text-gray-800'
-                            }`}
+                              }`}
                           >
                             {article.published ? 'Published' : 'Draft'}
                           </span>
@@ -635,11 +659,10 @@ const AdminDashboard = () => {
                         </span>
                       )}
                       <span
-                        className={`text-xs font-semibold px-2 py-1 rounded ${
-                          article.published
+                        className={`text-xs font-semibold px-2 py-1 rounded ${article.published
                             ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
-                        }`}
+                          }`}
                       >
                         {article.published ? 'Published' : 'Draft'}
                       </span>
@@ -715,11 +738,10 @@ const AdminDashboard = () => {
                       <h3 className="font-semibold text-gray-800 mb-2">{video.title}</h3>
                       <div className="flex justify-between items-center">
                         <span
-                          className={`text-xs px-2 py-1 rounded ${
-                            video.featured
+                          className={`text-xs px-2 py-1 rounded ${video.featured
                               ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-gray-100 text-gray-600'
-                          }`}
+                            }`}
                         >
                           {video.featured ? 'Featured' : 'Regular'}
                         </span>
@@ -763,11 +785,10 @@ const AdminDashboard = () => {
                       )}
                       <div className="flex justify-between items-center mt-3">
                         <span
-                          className={`text-xs px-2 py-1 rounded ${
-                            post.featured
+                          className={`text-xs px-2 py-1 rounded ${post.featured
                               ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-gray-100 text-gray-600'
-                          }`}
+                            }`}
                         >
                           {post.featured ? 'Featured' : 'Regular'}
                         </span>
@@ -847,10 +868,10 @@ const AdminDashboard = () => {
             <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
               <h3 className="text-lg sm:text-xl font-bold text-gray-800">
                 {editingItem ? 'Edit' : 'Add'} {
-                  modalType === 'news' ? 'News Article' : 
-                  modalType === 'video' ? 'Video' : 
-                  modalType === 'facebook-post' ? 'Facebook Post' : 
-                  'Item'
+                  modalType === 'news' ? 'News Article' :
+                    modalType === 'video' ? 'Video' :
+                      modalType === 'facebook-post' ? 'Facebook Post' :
+                        'Item'
                 }
               </h3>
               <button onClick={closeModal} className="text-gray-500 hover:text-gray-700 p-1">
@@ -893,7 +914,7 @@ const AdminDashboard = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-3">
                       <label className="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">Image</label>
-                      
+
                       {/* Upload Button */}
                       <div className="flex gap-2 mb-2">
                         <label className="flex-1">

@@ -1,30 +1,29 @@
-import { readData, writeData, newsFile } from '../../../lib/data';
 import { authenticateToken } from '../../../lib/auth';
+import { supabaseHelpers, isSupabaseConfigured } from '../../../lib/supabase';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const { id } = req.query;
+
+  // Check if Supabase is configured
+  if (!isSupabaseConfigured()) {
+    return res.status(500).json({
+      error: 'Database not configured. Please set up Supabase credentials.'
+    });
+  }
 
   if (req.method === 'GET') {
     try {
-      const news = readData(newsFile);
-      const article = news.find(n => n.id === parseInt(id));
+      const article = await supabaseHelpers.getNewsById(parseInt(id));
       if (!article) {
         return res.status(404).json({ error: 'Article not found' });
       }
-      
-      // Increment views on read (skip write on Vercel's read-only filesystem)
+
+      // Increment views if published
       if (article.published) {
+        await supabaseHelpers.incrementNewsViews(parseInt(id));
         article.views = (article.views || 0) + 1;
-        // Try to write, but don't fail if filesystem is read-only (Vercel)
-        try {
-          writeData(newsFile, news);
-        } catch (writeError) {
-          // Silently fail - views increment is nice-to-have but not critical
-          // On Vercel, filesystem is read-only, so we skip the write
-          console.log('Could not write views increment (filesystem may be read-only)');
-        }
       }
-      
+
       res.json(article);
     } catch (error) {
       console.error('Error fetching article:', error);
@@ -37,40 +36,40 @@ export default function handler(req, res) {
     }
 
     try {
-      const news = readData(newsFile);
-      const index = news.findIndex(n => n.id === parseInt(id));
-      if (index === -1) {
-        return res.status(404).json({ error: 'Article not found' });
-      }
-
-      // If marking as flash news, unmark other flash news
-      if (req.body.flashNews && req.body.flashNews !== news[index].flashNews) {
-        news.forEach((article, i) => {
-          if (i !== index && article.flashNews) {
-            article.flashNews = false;
+      // If marking as flash news, unmark other flash news first
+      if (req.body.flashNews) {
+        const allNews = await supabaseHelpers.getNews({});
+        for (const article of allNews) {
+          if (article.id !== parseInt(id) && article.flash_news) {
+            await supabaseHelpers.updateNews(article.id, { flash_news: false });
           }
-        });
+        }
       }
 
-      news[index] = {
-        ...news[index],
-        title: req.body.title !== undefined ? req.body.title : news[index].title,
-        content: req.body.content !== undefined ? req.body.content : news[index].content,
-        excerpt: req.body.excerpt !== undefined ? req.body.excerpt : news[index].excerpt,
-        imageUrl: req.body.imageUrl !== undefined ? req.body.imageUrl : news[index].imageUrl,
-        category: req.body.category !== undefined ? req.body.category : news[index].category,
-        published: req.body.published !== undefined ? req.body.published : news[index].published,
-        flashNews: req.body.flashNews !== undefined ? req.body.flashNews : news[index].flashNews,
-        featured: req.body.featured !== undefined ? req.body.featured : news[index].featured,
-        trending: req.body.trending !== undefined ? req.body.trending : news[index].trending,
-        views: req.body.views !== undefined ? req.body.views : (news[index].views || 0),
-        youtubeUrl: req.body.youtubeUrl !== undefined ? req.body.youtubeUrl : (news[index].youtubeUrl || ''),
-        facebookUrl: req.body.facebookUrl !== undefined ? req.body.facebookUrl : (news[index].facebookUrl || ''),
-        updatedAt: new Date().toISOString()
+      const updates = {
+        title: req.body.title,
+        content: req.body.content,
+        excerpt: req.body.excerpt,
+        image_url: req.body.imageUrl,
+        category: req.body.category,
+        published: req.body.published,
+        flash_news: req.body.flashNews,
+        featured: req.body.featured,
+        trending: req.body.trending,
+        views: req.body.views,
+        youtube_url: req.body.youtubeUrl,
+        facebook_url: req.body.facebookUrl
       };
 
-      writeData(newsFile, news);
-      res.json(news[index]);
+      // Remove undefined fields
+      Object.keys(updates).forEach(key => {
+        if (updates[key] === undefined) {
+          delete updates[key];
+        }
+      });
+
+      const updated = await supabaseHelpers.updateNews(parseInt(id), updates);
+      res.json(updated);
     } catch (error) {
       console.error('Error updating article:', error);
       res.status(500).json({ error: 'Failed to update article' });
@@ -82,9 +81,7 @@ export default function handler(req, res) {
     }
 
     try {
-      const news = readData(newsFile);
-      const filteredNews = news.filter(n => n.id !== parseInt(id));
-      writeData(newsFile, filteredNews);
+      await supabaseHelpers.deleteNews(parseInt(id));
       res.json({ message: 'Article deleted' });
     } catch (error) {
       console.error('Error deleting article:', error);
@@ -94,4 +91,3 @@ export default function handler(req, res) {
     res.status(405).json({ error: 'Method not allowed' });
   }
 }
-
