@@ -20,9 +20,244 @@ import {
   FaExternalLinkAlt,
   FaDownload,
   FaUpload,
-  FaImage
+  FaImage,
+  FaGripVertical
 } from 'react-icons/fa';
 import { uploadImageToSupabase } from '../../utils/imageUpload';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Sortable News Item Component (Desktop Table)
+const SortableNewsItem = ({ article, onEdit, onDelete }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: article.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <tr ref={setNodeRef} style={style} className="border-b hover:bg-gray-50">
+      <td className="px-4 py-3">
+        <div className="flex items-center space-x-2">
+          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
+            <FaGripVertical />
+          </div>
+          <span>{article.title}</span>
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+          {article.category}
+        </span>
+      </td>
+      <td className="px-4 py-3">{article.author}</td>
+      <td className="px-4 py-3">
+        <div className="flex flex-wrap gap-1">
+          {article.flashNews && (
+            <span className="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded">
+              Flash
+            </span>
+          )}
+          {article.featured && (
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">
+              Featured
+            </span>
+          )}
+          {article.trending && (
+            <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-2 py-1 rounded">
+              Trending
+            </span>
+          )}
+          {!article.flashNews && !article.featured && !article.trending && (
+            <span className="text-gray-400 text-xs">-</span>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <span
+          className={`text-xs font-semibold px-2 py-1 rounded ${article.published
+            ? 'bg-green-100 text-green-800'
+            : 'bg-gray-100 text-gray-800'
+            }`}
+        >
+          {article.published ? 'Published' : 'Draft'}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-600">
+        {new Date(article.createdAt).toLocaleDateString()}
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex space-x-2">
+          {(article.youtubeUrl || article.facebookUrl) && (
+            <div className="flex space-x-1 border-r pr-2 mr-2">
+              {article.youtubeUrl && (
+                <a
+                  href={article.youtubeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-red-600 hover:text-red-700"
+                  title="View on YouTube"
+                >
+                  <FaYoutube />
+                </a>
+              )}
+              {article.facebookUrl && (
+                <a
+                  href={article.facebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-700"
+                  title="View on Facebook"
+                >
+                  <FaFacebook />
+                </a>
+              )}
+            </div>
+          )}
+          <button
+            onClick={() => onEdit(article)}
+            className="text-blue-600 hover:text-blue-700"
+            title="Edit"
+          >
+            <FaEdit />
+          </button>
+          <button
+            onClick={() => onDelete(article.id)}
+            className="text-red-600 hover:text-red-700"
+            title="Delete"
+          >
+            <FaTrash />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
+// Sortable News Card Component (Mobile/Tablet)
+const SortableNewsCard = ({ article, onEdit, onDelete }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: article.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="card p-4 space-y-3">
+      <div className="flex justify-between items-start">
+        <div className="flex items-start space-x-2 flex-1">
+          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 mt-1">
+            <FaGripVertical />
+          </div>
+          <h3 className="font-bold text-gray-800 flex-1 pr-2 line-clamp-2">{article.title}</h3>
+        </div>
+        <div className="flex space-x-2 flex-shrink-0">
+          <button
+            onClick={() => onEdit(article)}
+            className="text-blue-600 hover:text-blue-700 p-1"
+            title="Edit"
+          >
+            <FaEdit />
+          </button>
+          <button
+            onClick={() => onDelete(article.id)}
+            className="text-red-600 hover:text-red-700 p-1"
+            title="Delete"
+          >
+            <FaTrash />
+          </button>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 items-center">
+        <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+          {article.category}
+        </span>
+        {article.flashNews && (
+          <span className="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded">
+            Flash
+          </span>
+        )}
+        {article.featured && (
+          <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">
+            Featured
+          </span>
+        )}
+        {article.trending && (
+          <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-2 py-1 rounded">
+            Trending
+          </span>
+        )}
+        <span
+          className={`text-xs font-semibold px-2 py-1 rounded ${article.published
+            ? 'bg-green-100 text-green-800'
+            : 'bg-gray-100 text-gray-800'
+            }`}
+        >
+          {article.published ? 'Published' : 'Draft'}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+        <span>{article.author}</span>
+        <span>•</span>
+        <span>{new Date(article.createdAt).toLocaleDateString()}</span>
+      </div>
+      {(article.youtubeUrl || article.facebookUrl) && (
+        <div className="flex space-x-3 pt-2 border-t">
+          {article.youtubeUrl && (
+            <a
+              href={article.youtubeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-1 text-red-600 hover:text-red-700 text-sm"
+            >
+              <FaYoutube />
+              <span>YouTube</span>
+            </a>
+          )}
+          {article.facebookUrl && (
+            <a
+              href={article.facebookUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm"
+            >
+              <FaFacebook />
+              <span>Facebook</span>
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const { user, logout, token } = useAuth();
@@ -41,6 +276,11 @@ const AdminDashboard = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [imagePreview, setImagePreview] = useState(null);
+
+  // Reorder mode states
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [reorderedNews, setReorderedNews] = useState([]);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -202,21 +442,11 @@ const AdminDashboard = () => {
       return;
     }
 
-    // Check if token exists
-    if (!token) {
-      alert('Authentication token not found. Please log in again.');
-      console.error('No token available');
-      return;
-    }
-
     setExtractingVideo(true);
     try {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-
-      console.log('Sending request to extract video details with token:', token ? 'Token present' : 'No token');
-
       const response = await axios.post(API_ENDPOINTS.VIDEOS_EXTRACT_DETAILS, {
         url: formData.url
       }, config);
@@ -230,14 +460,7 @@ const AdminDashboard = () => {
       alert('Video details extracted successfully!');
     } catch (error) {
       console.error('Error extracting video details:', error);
-      console.error('Token used:', token ? 'Token present' : 'No token');
-      console.error('Response:', error.response);
-
-      if (error.response?.status === 401) {
-        alert('Authentication failed. Please log out and log in again.');
-      } else {
-        alert(error.response?.data?.error || 'Failed to extract video details. Please try again.');
-      }
+      alert(error.response?.data?.error || 'Failed to extract video details. Please try again.');
     } finally {
       setExtractingVideo(false);
     }
@@ -246,13 +469,6 @@ const AdminDashboard = () => {
   const handleExtractImageUrl = async () => {
     if (!formData.imageUrl) {
       alert('Please enter a YouTube or Facebook URL first');
-      return;
-    }
-
-    // Check if token exists
-    if (!token) {
-      alert('Authentication token not found. Please log in again.');
-      console.error('No token available');
       return;
     }
 
@@ -284,12 +500,6 @@ const AdminDashboard = () => {
       alert(`Image URL extracted successfully from ${response.data.sourceType}!`);
     } catch (error) {
       console.error('Error extracting image URL:', error);
-
-      if (error.response?.status === 401) {
-        alert('Authentication failed. Please log out and log in again.');
-        return;
-      }
-
       const errorMessage = error.response?.data?.error || 'Failed to extract image URL. Please try again or use a direct image URL.';
 
       // Provide helpful suggestions for Facebook URLs
@@ -379,6 +589,65 @@ const AdminDashboard = () => {
     });
   };
 
+  // Reorder mode handlers
+  const handleEnableReorderMode = () => {
+    setIsReorderMode(true);
+    setReorderedNews([...news]);
+  };
+
+  const handleCancelReorder = () => {
+    setIsReorderMode(false);
+    setReorderedNews([]);
+  };
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setReorderedNews((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleSaveOrder = async () => {
+    setIsSavingOrder(true);
+    try {
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+
+      // Create array of { id, display_order } objects
+      const articles = reorderedNews.map((article, index) => ({
+        id: article.id,
+        display_order: index
+      }));
+
+      await axios.put(API_ENDPOINTS.NEWS_REORDER, { articles }, config);
+
+      // Update the main news state
+      setNews(reorderedNews);
+      setIsReorderMode(false);
+      setReorderedNews([]);
+      alert('News order updated successfully!');
+    } catch (error) {
+      console.error('Error saving order:', error);
+      alert('Failed to save order. Please try again.');
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -407,7 +676,7 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto">
-            <Link
+            <a
               href="/"
               target="_blank"
               rel="noopener noreferrer"
@@ -415,7 +684,7 @@ const AdminDashboard = () => {
             >
               <FaHome className="w-4 h-4" />
               <span className="hidden sm:inline">View Site</span>
-            </Link>
+            </a>
             <button
               onClick={handleLogout}
               className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 active:scale-95 text-sm sm:text-base"
@@ -434,8 +703,8 @@ const AdminDashboard = () => {
             <button
               onClick={() => setActiveTab('news')}
               className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-all duration-300 relative group text-sm sm:text-base ${activeTab === 'news'
-                  ? 'text-blue-600 bg-white shadow-lg'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                ? 'text-blue-600 bg-white shadow-lg'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
                 }`}
             >
               <div className="flex items-center justify-center space-x-1 sm:space-x-2">
@@ -443,8 +712,8 @@ const AdminDashboard = () => {
                 <span className="hidden sm:inline">News Articles</span>
                 <span className="sm:hidden">News</span>
                 <span className={`px-2 py-0.5 rounded-full text-xs font-bold transition-all ${activeTab === 'news'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-gray-200 text-gray-600'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-gray-200 text-gray-600'
                   }`}>
                   {news.length}
                 </span>
@@ -456,16 +725,16 @@ const AdminDashboard = () => {
             <button
               onClick={() => setActiveTab('videos')}
               className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-all duration-300 relative group text-sm sm:text-base ${activeTab === 'videos'
-                  ? 'text-blue-600 bg-white shadow-lg'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                ? 'text-blue-600 bg-white shadow-lg'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
                 }`}
             >
               <div className="flex items-center justify-center space-x-1 sm:space-x-2">
                 <FaVideo className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${activeTab === 'videos' ? 'scale-110' : ''}`} />
                 <span>Videos</span>
                 <span className={`px-2 py-0.5 rounded-full text-xs font-bold transition-all ${activeTab === 'videos'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-gray-200 text-gray-600'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-gray-200 text-gray-600'
                   }`}>
                   {videos.length}
                 </span>
@@ -477,8 +746,8 @@ const AdminDashboard = () => {
             <button
               onClick={() => setActiveTab('settings')}
               className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-all duration-300 relative group text-sm sm:text-base ${activeTab === 'settings'
-                  ? 'text-blue-600 bg-white shadow-lg'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                ? 'text-blue-600 bg-white shadow-lg'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
                 }`}
             >
               <div className="flex items-center justify-center space-x-1 sm:space-x-2">
@@ -496,16 +765,57 @@ const AdminDashboard = () => {
         <div className="card p-4 sm:p-6 lg:p-8">
           {activeTab === 'news' && (
             <div>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-800">News Articles</h2>
-                <button
-                  onClick={() => openModal('news')}
-                  className="btn-primary flex items-center space-x-2 text-sm sm:text-base w-full sm:w-auto justify-center"
-                >
-                  <FaPlus />
-                  <span>Add News</span>
-                </button>
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  {!isReorderMode ? (
+                    <>
+                      <button
+                        onClick={handleEnableReorderMode}
+                        className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white font-medium hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 hover:scale-105 active:scale-95 text-sm sm:text-base flex-1 sm:flex-initial justify-center"
+                        disabled={news.length === 0}
+                      >
+                        <FaGripVertical />
+                        <span>Reorder</span>
+                      </button>
+                      <button
+                        onClick={() => openModal('news')}
+                        className="btn-primary flex items-center space-x-2 text-sm sm:text-base flex-1 sm:flex-initial justify-center"
+                      >
+                        <FaPlus />
+                        <span>Add News</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleSaveOrder}
+                        disabled={isSavingOrder}
+                        className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base flex-1 sm:flex-initial justify-center"
+                      >
+                        <FaSave />
+                        <span>{isSavingOrder ? 'Saving...' : 'Save Order'}</span>
+                      </button>
+                      <button
+                        onClick={handleCancelReorder}
+                        disabled={isSavingOrder}
+                        className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-gray-500 to-gray-600 text-white font-medium hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-lg shadow-gray-500/30 hover:shadow-xl hover:shadow-gray-500/40 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base flex-1 sm:flex-initial justify-center"
+                      >
+                        <FaTimes />
+                        <span>Cancel</span>
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
+
+              {isReorderMode && (
+                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <p className="text-sm text-purple-800">
+                    <strong>Reorder Mode:</strong> Drag articles using the <FaGripVertical className="inline" /> handle to reorder them. Click "Save Order" when done.
+                  </p>
+                </div>
+              )}
 
               {/* Desktop Table */}
               <div className="hidden lg:block overflow-x-auto">
@@ -522,184 +832,228 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {news.map((article) => (
-                      <tr key={article.id} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-3">{article.title}</td>
-                        <td className="px-4 py-3">
-                          <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
-                            {article.category}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">{article.author}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1">
-                            {article.flashNews && (
-                              <span className="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded">
-                                Flash
-                              </span>
-                            )}
-                            {article.featured && (
-                              <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">
-                                Featured
-                              </span>
-                            )}
-                            {article.trending && (
-                              <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-2 py-1 rounded">
-                                Trending
-                              </span>
-                            )}
-                            {!article.flashNews && !article.featured && !article.trending && (
-                              <span className="text-gray-400 text-xs">-</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`text-xs font-semibold px-2 py-1 rounded ${article.published
+                    {isReorderMode ? (
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={reorderedNews.map(article => article.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {reorderedNews.map((article) => (
+                            <SortableNewsItem
+                              key={article.id}
+                              article={article}
+                              onEdit={() => openModal('news', article)}
+                              onDelete={(id) => handleDelete('news', id)}
+                            />
+                          ))}
+                        </SortableContext>
+                      </DndContext>
+                    ) : (
+                      news.map((article) => (
+                        <tr key={article.id} className="border-b hover:bg-gray-50">
+                          <td className="px-4 py-3">{article.title}</td>
+                          <td className="px-4 py-3">
+                            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+                              {article.category}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">{article.author}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1">
+                              {article.flashNews && (
+                                <span className="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded">
+                                  Flash
+                                </span>
+                              )}
+                              {article.featured && (
+                                <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">
+                                  Featured
+                                </span>
+                              )}
+                              {article.trending && (
+                                <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-2 py-1 rounded">
+                                  Trending
+                                </span>
+                              )}
+                              {!article.flashNews && !article.featured && !article.trending && (
+                                <span className="text-gray-400 text-xs">-</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`text-xs font-semibold px-2 py-1 rounded ${article.published
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-gray-100 text-gray-800'
-                              }`}
-                          >
-                            {article.published ? 'Published' : 'Draft'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          {new Date(article.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex space-x-2">
-                            {(article.youtubeUrl || article.facebookUrl) && (
-                              <div className="flex space-x-1 border-r pr-2 mr-2">
-                                {article.youtubeUrl && (
-                                  <a
-                                    href={article.youtubeUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-red-600 hover:text-red-700"
-                                    title="View on YouTube"
-                                  >
-                                    <FaYoutube />
-                                  </a>
-                                )}
-                                {article.facebookUrl && (
-                                  <a
-                                    href={article.facebookUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:text-blue-700"
-                                    title="View on Facebook"
-                                  >
-                                    <FaFacebook />
-                                  </a>
-                                )}
-                              </div>
-                            )}
-                            <button
-                              onClick={() => openModal('news', article)}
-                              className="text-blue-600 hover:text-blue-700"
-                              title="Edit"
+                                }`}
                             >
-                              <FaEdit />
-                            </button>
-                            <button
-                              onClick={() => handleDelete('news', article.id)}
-                              className="text-red-600 hover:text-red-700"
-                              title="Delete"
-                            >
-                              <FaTrash />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                              {article.published ? 'Published' : 'Draft'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {new Date(article.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex space-x-2">
+                              {(article.youtubeUrl || article.facebookUrl) && (
+                                <div className="flex space-x-1 border-r pr-2 mr-2">
+                                  {article.youtubeUrl && (
+                                    <a
+                                      href={article.youtubeUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-red-600 hover:text-red-700"
+                                      title="View on YouTube"
+                                    >
+                                      <FaYoutube />
+                                    </a>
+                                  )}
+                                  {article.facebookUrl && (
+                                    <a
+                                      href={article.facebookUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-700"
+                                      title="View on Facebook"
+                                    >
+                                      <FaFacebook />
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                              <button
+                                onClick={() => openModal('news', article)}
+                                className="text-blue-600 hover:text-blue-700"
+                                title="Edit"
+                              >
+                                <FaEdit />
+                              </button>
+                              <button
+                                onClick={() => handleDelete('news', article.id)}
+                                className="text-red-600 hover:text-red-700"
+                                title="Delete"
+                              >
+                                <FaTrash />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
 
               {/* Mobile/Tablet Card View */}
               <div className="lg:hidden space-y-4">
-                {news.map((article) => (
-                  <div key={article.id} className="card p-4 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-gray-800 flex-1 pr-2 line-clamp-2">{article.title}</h3>
-                      <div className="flex space-x-2 flex-shrink-0">
-                        <button
-                          onClick={() => openModal('news', article)}
-                          className="text-blue-600 hover:text-blue-700 p-1"
-                          title="Edit"
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          onClick={() => handleDelete('news', article.id)}
-                          className="text-red-600 hover:text-red-700 p-1"
-                          title="Delete"
-                        >
-                          <FaTrash />
-                        </button>
+                {isReorderMode ? (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={reorderedNews.map(article => article.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {reorderedNews.map((article) => (
+                        <SortableNewsCard
+                          key={article.id}
+                          article={article}
+                          onEdit={() => openModal('news', article)}
+                          onDelete={(id) => handleDelete('news', id)}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                ) : (
+                  news.map((article) => (
+                    <div key={article.id} className="card p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-bold text-gray-800 flex-1 pr-2 line-clamp-2">{article.title}</h3>
+                        <div className="flex space-x-2 flex-shrink-0">
+                          <button
+                            onClick={() => openModal('news', article)}
+                            className="text-blue-600 hover:text-blue-700 p-1"
+                            title="Edit"
+                          >
+                            <FaEdit />
+                          </button>
+                          <button
+                            onClick={() => handleDelete('news', article.id)}
+                            className="text-red-600 hover:text-red-700 p-1"
+                            title="Delete"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
-                        {article.category}
-                      </span>
-                      {article.flashNews && (
-                        <span className="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded">
-                          Flash
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+                          {article.category}
                         </span>
-                      )}
-                      {article.featured && (
-                        <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">
-                          Featured
-                        </span>
-                      )}
-                      {article.trending && (
-                        <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-2 py-1 rounded">
-                          Trending
-                        </span>
-                      )}
-                      <span
-                        className={`text-xs font-semibold px-2 py-1 rounded ${article.published
+                        {article.flashNews && (
+                          <span className="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded">
+                            Flash
+                          </span>
+                        )}
+                        {article.featured && (
+                          <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">
+                            Featured
+                          </span>
+                        )}
+                        {article.trending && (
+                          <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-2 py-1 rounded">
+                            Trending
+                          </span>
+                        )}
+                        <span
+                          className={`text-xs font-semibold px-2 py-1 rounded ${article.published
                             ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
-                          }`}
-                      >
-                        {article.published ? 'Published' : 'Draft'}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                      <span>{article.author}</span>
-                      <span>•</span>
-                      <span>{new Date(article.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    {(article.youtubeUrl || article.facebookUrl) && (
-                      <div className="flex space-x-3 pt-2 border-t">
-                        {article.youtubeUrl && (
-                          <a
-                            href={article.youtubeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center space-x-1 text-red-600 hover:text-red-700 text-sm"
-                          >
-                            <FaYoutube />
-                            <span>YouTube</span>
-                          </a>
-                        )}
-                        {article.facebookUrl && (
-                          <a
-                            href={article.facebookUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm"
-                          >
-                            <FaFacebook />
-                            <span>Facebook</span>
-                          </a>
-                        )}
+                            }`}
+                        >
+                          {article.published ? 'Published' : 'Draft'}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                        <span>{article.author}</span>
+                        <span>•</span>
+                        <span>{new Date(article.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      {(article.youtubeUrl || article.facebookUrl) && (
+                        <div className="flex space-x-3 pt-2 border-t">
+                          {article.youtubeUrl && (
+                            <a
+                              href={article.youtubeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center space-x-1 text-red-600 hover:text-red-700 text-sm"
+                            >
+                              <FaYoutube />
+                              <span>YouTube</span>
+                            </a>
+                          )}
+                          {article.facebookUrl && (
+                            <a
+                              href={article.facebookUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm"
+                            >
+                              <FaFacebook />
+                              <span>Facebook</span>
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -739,8 +1093,8 @@ const AdminDashboard = () => {
                       <div className="flex justify-between items-center">
                         <span
                           className={`text-xs px-2 py-1 rounded ${video.featured
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-600'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-600'
                             }`}
                         >
                           {video.featured ? 'Featured' : 'Regular'}
@@ -786,8 +1140,8 @@ const AdminDashboard = () => {
                       <div className="flex justify-between items-center mt-3">
                         <span
                           className={`text-xs px-2 py-1 rounded ${post.featured
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-600'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-600'
                             }`}
                         >
                           {post.featured ? 'Featured' : 'Regular'}

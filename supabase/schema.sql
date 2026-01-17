@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS news (
   trending BOOLEAN DEFAULT FALSE,
   views INTEGER DEFAULT 0,
   youtube_url TEXT,
-  facebook_url TEXT
+  facebook_url TEXT,
+  display_order INTEGER DEFAULT 0
 );
 
 -- =====================================================
@@ -194,6 +195,7 @@ CREATE POLICY "Allow public select for users"
 CREATE INDEX IF NOT EXISTS idx_news_published ON news(published);
 CREATE INDEX IF NOT EXISTS idx_news_created_at ON news(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_news_category ON news(category);
+CREATE INDEX IF NOT EXISTS idx_news_display_order ON news(display_order ASC);
 CREATE INDEX IF NOT EXISTS idx_videos_added_at ON videos(added_at DESC);
 CREATE INDEX IF NOT EXISTS idx_facebook_posts_added_at ON facebook_posts(added_at DESC);
 CREATE INDEX IF NOT EXISTS idx_settings_key ON settings(key);

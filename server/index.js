@@ -136,7 +136,7 @@ app.get('/api/news', (req, res) => {
   try {
     let news = readData(newsFile);
     const { search, category, featured, trending, flashNews } = req.query;
-    
+
     // Ensure all articles have default values for new fields
     news = news.map(article => ({
       ...article,
@@ -145,44 +145,44 @@ app.get('/api/news', (req, res) => {
       trending: article.trending !== undefined ? article.trending : false,
       views: article.views !== undefined ? article.views : 0
     }));
-    
+
     // Filter by published
     news = news.filter(n => n.published === true);
-    
+
     // Search filter
     if (search) {
       const searchLower = search.toLowerCase();
-      news = news.filter(n => 
+      news = news.filter(n =>
         n.title.toLowerCase().includes(searchLower) ||
         n.content.toLowerCase().includes(searchLower) ||
         (n.excerpt && n.excerpt.toLowerCase().includes(searchLower)) ||
         (n.category && n.category.toLowerCase().includes(searchLower))
       );
     }
-    
+
     // Category filter
     if (category && category !== 'All') {
       news = news.filter(n => n.category === category);
     }
-    
+
     // Featured filter
     if (featured === 'true') {
       news = news.filter(n => n.featured === true);
     }
-    
+
     // Trending filter
     if (trending === 'true') {
       news = news.filter(n => n.trending === true);
     }
-    
+
     // Flash news filter
     if (flashNews === 'true') {
       news = news.filter(n => n.flashNews === true);
     }
-    
-    // Sort by date (newest first)
-    news.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
+
+    // Sort by display order (ascending, lower numbers first)
+    news.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+
     res.json(news);
   } catch (error) {
     console.error('Error fetching news:', error);
@@ -247,13 +247,13 @@ app.get('/api/news/:id', (req, res) => {
   if (!article) {
     return res.status(404).json({ error: 'Article not found' });
   }
-  
+
   // Increment views on read
   if (article.published) {
     article.views = (article.views || 0) + 1;
     writeData(newsFile, news);
   }
-  
+
   res.json(article);
 });
 
@@ -264,24 +264,30 @@ app.get('/api/news/:id/related', (req, res) => {
   if (!currentArticle) {
     return res.status(404).json({ error: 'Article not found' });
   }
-  
+
   const related = news
-    .filter(n => 
+    .filter(n =>
       n.id !== currentArticle.id &&
       n.published &&
-      (n.category === currentArticle.category || 
-       n.title.toLowerCase().split(' ').some(word => 
-         currentArticle.title.toLowerCase().includes(word) && word.length > 4
-       ))
+      (n.category === currentArticle.category ||
+        n.title.toLowerCase().split(' ').some(word =>
+          currentArticle.title.toLowerCase().includes(word) && word.length > 4
+        ))
     )
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4);
-  
+
   res.json(related);
 });
 
 app.post('/api/news', authenticateToken, (req, res) => {
   const news = readData(newsFile);
+
+  // Calculate the highest display_order and add 1 for new article
+  const maxDisplayOrder = news.length > 0
+    ? Math.max(...news.map(n => n.display_order || 0))
+    : -1;
+
   const newArticle = {
     id: news.length > 0 ? Math.max(...news.map(n => n.id)) + 1 : 1,
     title: req.body.title,
@@ -298,7 +304,8 @@ app.post('/api/news', authenticateToken, (req, res) => {
     trending: req.body.trending || false,
     views: 0,
     youtubeUrl: req.body.youtubeUrl || '',
-    facebookUrl: req.body.facebookUrl || ''
+    facebookUrl: req.body.facebookUrl || '',
+    display_order: maxDisplayOrder + 1
   };
   news.push(newArticle);
   writeData(newsFile, news);
@@ -335,11 +342,40 @@ app.put('/api/news/:id', authenticateToken, (req, res) => {
     views: req.body.views !== undefined ? req.body.views : (news[index].views || 0),
     youtubeUrl: req.body.youtubeUrl !== undefined ? req.body.youtubeUrl : (news[index].youtubeUrl || ''),
     facebookUrl: req.body.facebookUrl !== undefined ? req.body.facebookUrl : (news[index].facebookUrl || ''),
+    display_order: req.body.display_order !== undefined ? req.body.display_order : (news[index].display_order || 0),
     updatedAt: new Date().toISOString()
   };
 
   writeData(newsFile, news);
   res.json(news[index]);
+});
+
+// Reorder news articles (bulk update display_order)
+app.put('/api/news/reorder', authenticateToken, (req, res) => {
+  try {
+    const { articles } = req.body; // Expecting array of { id, display_order }
+
+    if (!Array.isArray(articles)) {
+      return res.status(400).json({ error: 'Articles must be an array' });
+    }
+
+    const news = readData(newsFile);
+
+    // Update display_order for each article
+    articles.forEach(({ id, display_order }) => {
+      const index = news.findIndex(n => n.id === parseInt(id));
+      if (index !== -1) {
+        news[index].display_order = display_order;
+        news[index].updatedAt = new Date().toISOString();
+      }
+    });
+
+    writeData(newsFile, news);
+    res.json({ message: 'News order updated successfully', count: articles.length });
+  } catch (error) {
+    console.error('Error reordering news:', error);
+    res.status(500).json({ error: 'Failed to reorder news' });
+  }
 });
 
 app.delete('/api/news/:id', authenticateToken, (req, res) => {
@@ -382,7 +418,7 @@ app.post('/api/videos', authenticateToken, (req, res) => {
 app.post('/api/videos/extract-details', authenticateToken, async (req, res) => {
   try {
     const { url } = req.body;
-    
+
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
@@ -417,7 +453,7 @@ app.post('/api/videos/extract-details', authenticateToken, async (req, res) => {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
       });
-      
+
       // Try to extract description from meta tags
       const metaDescriptionMatch = videoPageResponse.data.match(/<meta name="description" content="([^"]+)"/);
       if (metaDescriptionMatch && metaDescriptionMatch[1]) {
@@ -451,7 +487,7 @@ app.post('/api/videos/extract-details', authenticateToken, async (req, res) => {
 app.post('/api/news/extract-image', authenticateToken, async (req, res) => {
   try {
     const { url } = req.body;
-    
+
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
@@ -465,7 +501,7 @@ app.post('/api/news/extract-image', authenticateToken, async (req, res) => {
       sourceType = 'youtube';
       // Try maxresdefault first (highest quality), fallback to hqdefault
       thumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
-      
+
       // Verify if maxresdefault exists by checking with oEmbed
       try {
         const oEmbedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
@@ -481,9 +517,9 @@ app.post('/api/news/extract-image', authenticateToken, async (req, res) => {
     // Check if it's a Facebook URL
     else if (url.includes('facebook.com') || url.includes('fb.com') || url.includes('fb.watch')) {
       sourceType = 'facebook';
-      
+
       // Try multiple methods to extract Facebook thumbnail
-      
+
       // Method 1: Try Facebook oEmbed API for videos
       if (url.includes('video') || url.includes('watch')) {
         try {
@@ -503,13 +539,13 @@ app.post('/api/news/extract-image', authenticateToken, async (req, res) => {
       // Method 2: Try to extract photo ID from various Facebook URL formats
       if (!thumbnailUrl) {
         let photoId = null;
-        
+
         // Format 1: https://www.facebook.com/photo?fbid=...
         const fbidMatch = url.match(/[?&](?:fbid|story_fbid)=(\d+)/);
         if (fbidMatch) {
           photoId = fbidMatch[1];
         }
-        
+
         // Format 2: https://www.facebook.com/photo.php?fbid=...
         if (!photoId) {
           const photoPhpMatch = url.match(/photo\.php\?.*[?&]fbid=(\d+)/);
@@ -517,7 +553,7 @@ app.post('/api/news/extract-image', authenticateToken, async (req, res) => {
             photoId = photoPhpMatch[1];
           }
         }
-        
+
         // Format 3: https://www.facebook.com/permalink.php?story_fbid=...
         if (!photoId) {
           const permalinkMatch = url.match(/permalink\.php\?.*[?&]story_fbid=(\d+)/);
@@ -525,7 +561,7 @@ app.post('/api/news/extract-image', authenticateToken, async (req, res) => {
             photoId = permalinkMatch[1];
           }
         }
-        
+
         // Format 4: https://www.facebook.com/posts/ or /photos/
         if (!photoId) {
           const postsMatch = url.match(/\/(?:posts|photos)\/(\d+)/);
@@ -546,7 +582,7 @@ app.post('/api/news/extract-image', authenticateToken, async (req, res) => {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
               }
             });
-            
+
             if (graphResponse.status === 200) {
               if (graphResponse.data && graphResponse.data.data && graphResponse.data.data.url) {
                 thumbnailUrl = graphResponse.data.data.url;
@@ -566,7 +602,7 @@ app.post('/api/news/extract-image', authenticateToken, async (req, res) => {
               console.error('Response data:', error.response.data);
             }
           }
-          
+
           // Method 2b: Try Graph API without redirect=false (redirects to image directly)
           // Note: This may not work for all photos due to privacy settings
           if (!thumbnailUrl) {
@@ -578,7 +614,7 @@ app.post('/api/news/extract-image', authenticateToken, async (req, res) => {
                 maxRedirects: 0,
                 validateStatus: (status) => status >= 200 && status < 400
               });
-              
+
               // If redirect works, use the redirect URL (axios will follow it)
               if (redirectResponse.status >= 300 && redirectResponse.status < 400 && redirectResponse.headers.location) {
                 thumbnailUrl = redirectResponse.headers.location;
@@ -618,27 +654,27 @@ app.post('/api/news/extract-image', authenticateToken, async (req, res) => {
         let photoId = null;
         const fbidMatch = url.match(/[?&](?:fbid|story_fbid)=(\d+)/);
         if (fbidMatch) photoId = fbidMatch[1];
-        
-        return res.status(400).json({ 
+
+        return res.status(400).json({
           error: 'Could not extract thumbnail from Facebook URL. This may be due to:\n' +
-                 '1. The post/photo privacy settings (private posts require authentication)\n' +
-                 '2. Facebook API limitations (requires access token for many requests)\n' +
-                 '3. Invalid or unsupported URL format\n\n' +
-                 'Recommended solutions:\n' +
-                 '• Right-click on the Facebook image → "Copy image address" → Paste that URL\n' +
-                 '• Use a YouTube video URL instead (thumbnails work reliably)\n' +
-                 '• Upload the image to an image hosting service (Imgur, etc.)' +
-                 (photoId ? `\n\nDetected Photo ID: ${photoId} (may require Facebook access token)` : '')
+            '1. The post/photo privacy settings (private posts require authentication)\n' +
+            '2. Facebook API limitations (requires access token for many requests)\n' +
+            '3. Invalid or unsupported URL format\n\n' +
+            'Recommended solutions:\n' +
+            '• Right-click on the Facebook image → "Copy image address" → Paste that URL\n' +
+            '• Use a YouTube video URL instead (thumbnails work reliably)\n' +
+            '• Upload the image to an image hosting service (Imgur, etc.)' +
+            (photoId ? `\n\nDetected Photo ID: ${photoId} (may require Facebook access token)` : '')
         });
       }
     } else {
-      return res.status(400).json({ 
-        error: 'Unsupported URL type. Please provide a YouTube video URL or Facebook post/photo URL.' 
+      return res.status(400).json({
+        error: 'Unsupported URL type. Please provide a YouTube video URL or Facebook post/photo URL.'
       });
     }
 
     if (!thumbnailUrl) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Could not extract thumbnail from the provided URL. Please ensure it is a valid YouTube video URL or Facebook post/photo URL.',
         url: url
       });
@@ -651,7 +687,7 @@ app.post('/api/news/extract-image', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error extracting image URL:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to extract image URL: ' + error.message,
       details: error.response?.data || 'Unknown error'
     });
@@ -680,7 +716,7 @@ app.post('/api/facebook-posts', authenticateToken, (req, res) => {
   try {
     const posts = readData(facebookPostsFile);
     const postId = extractFacebookPostId(req.body.url);
-    
+
     if (!req.body.url || !req.body.url.includes('facebook.com')) {
       return res.status(400).json({ error: 'Invalid Facebook URL' });
     }
@@ -741,25 +777,25 @@ function extractFacebookPostId(url) {
   try {
     // Handle various Facebook URL formats
     const urlObj = new URL(url);
-    
+
     // Try to get story_fbid from query params
     const storyFbid = urlObj.searchParams.get('story_fbid');
     if (storyFbid) {
       return storyFbid;
     }
-    
+
     // Try to extract from pathname (e.g., /posts/123456789)
     const pathMatch = url.match(/\/posts\/(\d+)/);
     if (pathMatch) {
       return pathMatch[1];
     }
-    
+
     // If URL contains the post ID pattern, extract it
     const idMatch = url.match(/[?&](story_fbid|id)=(\d+)/);
     if (idMatch) {
       return idMatch[2];
     }
-    
+
     // Return the full URL if we can't extract a specific ID
     return url;
   } catch (error) {
