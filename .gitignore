@@ -34,9 +34,20 @@ pnpm-debug.log*
 *.swo
 *~
 
-# Data files (optional - remove if you want to track data)
-server/data/
-server/uploads/
+# Legacy folders (migrated to Next.js)
+client/
+server/
+data/
+
+# Temporary documentation files
+FIREBASE_SETUP.md
+README_NEXTJS.md
+PROJECT_OVERVIEW.md
+MIGRATION_NOTES.md
+SUPABASE_MIGRATION.md
+REORDER_BUTTON_FIX.md
+NEW_FEATURES.md
+UI_UX_IMPROVEMENTS.md
 
 # OS
 Thumbs.db
