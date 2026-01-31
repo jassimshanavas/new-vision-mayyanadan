@@ -1,20 +1,15 @@
 import axios from 'axios';
 import { extractYouTubeId } from '../../../lib/data';
-import { authenticateToken } from '../../../lib/auth';
+import { requireAuth } from '../../../lib/auth';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const user = authenticateToken(req);
-  if (!user) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
   try {
     const { url } = req.body;
-    
+
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
@@ -49,7 +44,7 @@ export default async function handler(req, res) {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
       });
-      
+
       // Try to extract description from meta tags
       const metaDescriptionMatch = videoPageResponse.data.match(/<meta name="description" content="([^"]+)"/);
       if (metaDescriptionMatch && metaDescriptionMatch[1]) {
@@ -79,3 +74,4 @@ export default async function handler(req, res) {
   }
 }
 
+export default requireAuth(handler);

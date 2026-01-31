@@ -8,6 +8,7 @@ import VideoSection from '../components/VideoSection';
 import FacebookSection from '../components/FacebookSection';
 import HeroSection from '../components/HeroSection';
 import { FaNewspaper, FaVideo, FaFacebook } from 'react-icons/fa';
+import { initScrollAnimations } from '../utils/scrollAnimation';
 
 const Home = () => {
   const [news, setNews] = useState([]);
@@ -17,6 +18,17 @@ const Home = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Initialize scroll animations after content loads
+  useEffect(() => {
+    if (!loading) {
+      // Small delay to ensure DOM is fully rendered
+      const timer = setTimeout(() => {
+        initScrollAnimations();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   const fetchData = async () => {
     try {

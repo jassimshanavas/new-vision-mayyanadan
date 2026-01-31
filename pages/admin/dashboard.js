@@ -466,6 +466,12 @@ const AdminDashboard = () => {
       return;
     }
 
+    if (!token) {
+      alert('You are not authenticated. Please log in again.');
+      router.push('/admin/login');
+      return;
+    }
+
     setExtractingVideo(true);
     try {
       const config = {

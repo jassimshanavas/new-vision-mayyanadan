@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { readData, usersFile } from '../../../lib/data';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+import { supabaseHelpers, isSupabaseConfigured } from '../../../lib/supabase';
+import { JWT_SECRET } from '../../../lib/auth';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -11,8 +11,22 @@ export default async function handler(req, res) {
 
   try {
     const { username, password } = req.body;
-    const users = readData(usersFile);
-    const user = users.find(u => u.username === username || u.email === username);
+    let user = null;
+
+    if (isSupabaseConfigured()) {
+      // Try to get user from Supabase
+      try {
+        user = await supabaseHelpers.getUserByUsername(username);
+      } catch (error) {
+        console.error('Supabase user fetch error:', error);
+      }
+    }
+
+    // Fallback to local files if not found in Supabase or Supabase not configured
+    if (!user) {
+      const users = readData(usersFile);
+      user = users.find(u => u.username === username || u.email === username);
+    }
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
