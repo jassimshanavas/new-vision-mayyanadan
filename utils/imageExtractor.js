@@ -9,7 +9,7 @@
  */
 export const extractYouTubeId = (url) => {
   if (!url) return null;
-  
+
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
   return (match && match[2] && match[2].length === 11) ? match[2] : null;
@@ -23,11 +23,11 @@ export const extractYouTubeId = (url) => {
  */
 export const getYouTubeThumbnail = (videoIdOrUrl, quality = 'hqdefault') => {
   const videoId = extractYouTubeId(videoIdOrUrl) || videoIdOrUrl;
-  
+
   if (!videoId || videoId.length !== 11) {
     return null;
   }
-  
+
   return `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;
 };
 
@@ -72,12 +72,12 @@ export const isDirectImageUrl = (url) => {
  */
 export const extractThumbnailUrl = (url) => {
   if (!url) return null;
-  
+
   // If it's already a direct image URL, return it
   if (isDirectImageUrl(url)) {
     return url;
   }
-  
+
   // If it's a YouTube URL, extract thumbnail
   if (isYouTubeUrl(url)) {
     const videoId = extractYouTubeId(url);
@@ -86,13 +86,13 @@ export const extractThumbnailUrl = (url) => {
       return getYouTubeThumbnail(videoId, 'maxresdefault') || getYouTubeThumbnail(videoId, 'hqdefault');
     }
   }
-  
+
   // For Facebook URLs, we can't extract thumbnails client-side without API
   // Return null so the component can handle it (show placeholder or make server request)
   if (isFacebookUrl(url)) {
     return null;
   }
-  
+
   // Unknown URL type
   return null;
 };
@@ -100,14 +100,26 @@ export const extractThumbnailUrl = (url) => {
 /**
  * Get the best available thumbnail URL
  * Tries to extract from URL, falls back to placeholder
+ * Also handles Supabase ISP-level blocking in India by using a free image proxy
  * @param {string} url - Image URL, YouTube URL, or Facebook URL
  * @param {string} placeholder - Placeholder image URL
  * @returns {string} - Thumbnail URL or placeholder
  */
 export const getBestThumbnailUrl = (url, placeholder = 'https://via.placeholder.com/800x400?text=News+Image') => {
   if (!url) return placeholder;
-  
+
   const extracted = extractThumbnailUrl(url);
-  return extracted || placeholder;
+  const finalUrl = extracted || placeholder;
+
+  // Supabase ISP block workaround for India (March 2026)
+  // If the URL is from Supabase storage, wrap it with a free image proxy (images.weserv.nl)
+  if (finalUrl && finalUrl.includes('supabase.co')) {
+    // Encoded URL to pass as a query parameter
+    const encodedUrl = encodeURIComponent(finalUrl);
+    // Use images.weserv.nl as a free, reliable image proxy/CDN
+    return `https://images.weserv.nl/?url=${encodedUrl}&output=webp&q=80`;
+  }
+
+  return finalUrl;
 };
 
